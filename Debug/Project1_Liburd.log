@@ -1,0 +1,4 @@
+﻿  main.cpp
+C:\Users\wilme\OneDrive\Documents\Gaming Class\Project1_Liburd\main.cpp(42,17): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\wilme\OneDrive\Documents\Gaming Class\Project1_Liburd\main.cpp(43,18): warning C4305: 'initializing': truncation from 'double' to 'float'
+  Project1_Liburd.vcxproj -> C:\Users\wilme\OneDrive\Documents\Gaming Class\Project1_Liburd\Debug\Project1_Liburd.exe
