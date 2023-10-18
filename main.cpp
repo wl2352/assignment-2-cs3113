@@ -56,24 +56,25 @@ const float DEGREES_PER_SECOND = 90.0f;
 
 const char PLAYER_SPRITE_FILEPATH[] = "assets/aware.jpeg";
 const char KITTY_FILEPATH[] = "assets/angrykitty.jpeg";
-const char BALL_FILEPATH[] = "assets/glossy.jpg";
+const char WALL_FILEPATH[] = "assets/glossy.jpg";
+const char BALL_FILEPATH[] = "assets/Red_Circle_full.png";
 
 const float MINIMUM_COLLISION_DISTANCE = 1.0f;
-const float collision_factor = 0.09f;
+const float collision_factor = 0.9f;
 
 SDL_Window* display_window;
 bool g_game_is_running = true;
 bool is_growing = true;
 
 ShaderProgram g_program;
-glm::mat4 g_view_matrix, 
-g_model_matrix, 
-g_projection_matrix, 
-other_model_matrix, 
-left_wall_matrix, 
-right_wall_matrix, 
-top_wall_matrix, 
-bottom_wall_matrix, 
+glm::mat4 g_view_matrix,
+g_model_matrix,
+g_projection_matrix,
+other_model_matrix,
+left_wall_matrix,
+right_wall_matrix,
+top_wall_matrix,
+bottom_wall_matrix,
 ball_matrix;
 
 float g_triangle_x = 0.0f;
@@ -88,28 +89,31 @@ float o_y_coords = 0.0f;
 
 float previous_ticks = 0.0f;
 
-bool is_going_left = true;
-bool is_going_right = false;
-int ball_collision_count = 0;
+bool is_cpu = false;
+int ball_collision_bool = 0;
+int wall_collision_bool = 0;
 
-glm::vec3 g_player_position = glm::vec3(-8.0f, 0.0f, 0.0f); 
-glm::vec3 g_player_movement = glm::vec3(0.0f, 0.0f, 0.0f);  
+glm::vec3 g_player_position = glm::vec3(-4.0f, 0.0f, 0.0f);
+glm::vec3 g_player_movement = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 bot_movement = glm::vec3(0.0f, 0.0f, 0.0f);
 
-glm::vec3 g_player_orientation = glm::vec3(0.0f, 0.0f, 0.0f); 
-glm::vec3 g_player_rotation = glm::vec3(0.0f, 0.0f, 0.0f); 
+glm::vec3 g_player_orientation = glm::vec3(0.0f, 0.0f, 0.0f);
+glm::vec3 g_player_rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
-glm::vec3 other_player_position = glm::vec3(8.0f, 0.0f, 0.0f);
+glm::vec3 other_player_position = glm::vec3(4.0f, 0.0f, 0.0f);
 glm::vec3 other_player_movement = glm::vec3(0.0f, 0.0f, 0.0f);
 
 glm::vec3 other_player_orientation = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 other_player_rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
 glm::vec3 player_scale = glm::vec3(0.5f, 2.0f, 0.0f);
+glm::vec3 horizontal_scale = glm::vec3(10.0f, 0.1f, 0.0f);
+glm::vec3 vertical_scale = glm::vec3(0.1f, 8.0f, 0.0f);
 
-glm::vec3 top_wall_position = glm::vec3(0.0f, 6.0f, 0.0f);
-glm::vec3 bottom_wall_position = glm::vec3(0.0f, -6.0f, 0.0f);
-glm::vec3 left_wall_position = glm::vec3(-10.0f, 0.0f, 0.0f);
-glm::vec3 right_wall_position = glm::vec3(10.0f, 0.0f, 0.0f);
+glm::vec3 top_wall_position = glm::vec3(0.0f, 3.5f, 0.0f);
+glm::vec3 bottom_wall_position = glm::vec3(0.0f, -3.5f, 0.0f);
+glm::vec3 left_wall_position = glm::vec3(-5.0f, 0.0f, 0.0f);
+glm::vec3 right_wall_position = glm::vec3(5.0f, 0.0f, 0.0f);
 
 glm::vec3 ball_position = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 ball_movement = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -120,11 +124,12 @@ glm::vec3 ball_scale = glm::vec3(0.001f, 0.001f, 0.0f);
 
 float g_player_speed = 5.0f;  // move 1 unit per second 
 float other_player_speed = 5.0f;
-float ball_speed = 14.0f;
+float ball_speed = 3.0f;
 
 GLuint player_texture_id;
 GLuint other_texture_id;
 GLuint ball_texture_id;
+GLuint wall_texture_id;
 
 #define LOG(argument) std::cout << argument << '\n'
 
@@ -188,8 +193,34 @@ void initialise()
     top_wall_matrix = glm::mat4(1.0f);
     bottom_wall_matrix = glm::mat4(1.0f);
 
-    ball_matrix = glm::scale(ball_matrix, ball_scale);
+    left_wall_matrix = glm::mat4(1.0f);
+    left_wall_matrix = glm::translate(left_wall_matrix, left_wall_position);
+    left_wall_matrix = glm::scale(left_wall_matrix, vertical_scale);
+
+    right_wall_matrix = glm::mat4(1.0f);
+    right_wall_matrix = glm::translate(right_wall_matrix, right_wall_position);
+    right_wall_matrix = glm::scale(right_wall_matrix, vertical_scale);
+
+    top_wall_matrix = glm::mat4(1.0f);
+    top_wall_matrix = glm::translate(top_wall_matrix, top_wall_position);
+    top_wall_matrix = glm::scale(top_wall_matrix, horizontal_scale);
+
+    bottom_wall_matrix = glm::mat4(1.0f);
+    bottom_wall_matrix = glm::translate(bottom_wall_matrix, bottom_wall_position);
+    bottom_wall_matrix = glm::scale(bottom_wall_matrix, horizontal_scale);
+
+    g_model_matrix = glm::mat4(1.0f);
+    g_model_matrix = glm::translate(g_model_matrix, g_player_position);
+    g_model_matrix = glm::scale(g_model_matrix, glm::vec3(0.5f, 2.0f, 0.0f));//
+    // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
+    other_model_matrix = glm::mat4(1.0f);
+    other_model_matrix = glm::translate(other_model_matrix, other_player_position);
+    other_model_matrix = glm::scale(other_model_matrix, glm::vec3(0.5f, 2.0f, 0.0f));
+    // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+
     ball_matrix = glm::translate(ball_matrix, glm::vec3(0.0f, 0.0f, 0.0f));
+    ball_matrix = glm::scale(ball_matrix, ball_scale);
 
     g_view_matrix = glm::mat4(1.0f);  // Defines the position (location and orientation) of the camera
     g_projection_matrix = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);  // Defines the characteristics of your camera, such as clip planes, field of view, projection method etc.
@@ -204,11 +235,22 @@ void initialise()
     player_texture_id = load_texture(PLAYER_SPRITE_FILEPATH);
     other_texture_id = load_texture(KITTY_FILEPATH);
     ball_texture_id = load_texture(BALL_FILEPATH);
+    wall_texture_id = load_texture(WALL_FILEPATH);
 
     // enable blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
+
+// ————————————————————————— NEW STUFF ———————————————————————————— //
+bool check_collision(glm::vec3& position_a, glm::vec3& position_a_scale, glm::vec3& position_b, glm::vec3& position_b_scale)  //
+{                                                                   //
+    float x_distance = fabs(position_a.x - position_b.x) - ((position_b_scale.x * collision_factor + position_a_scale.x * collision_factor) / 2.0f);
+    float y_distance = fabs(position_a.y - position_b.y) - ((position_b_scale.y * collision_factor + position_a_scale.y * collision_factor) / 2.0f);
+
+    return x_distance < 0.0f && y_distance < 0.0f;
+}                                                                   //
+// ———————————————————————————————————————————————————————————————— //
 
 void process_input()
 {
@@ -216,6 +258,7 @@ void process_input()
     // VERY IMPORTANT: If nothing is pressed, we don't want to go anywhere   //
     g_player_movement = glm::vec3(0.0f);
     other_player_movement = glm::vec3(0.0f);
+
     //
     // –––––––––––––––––––––––––––––––– KEYSTROKES ––––––––––––––––––––––––– //
                                                                          //
@@ -236,11 +279,13 @@ void process_input()
             case SDLK_q:                                             //
                 // Quit the game with a keystroke                    //
                 g_game_is_running = false;                           //
-                break;                                               //
-                //q
-                break;                                               //
-            }                                                            //
-                                                                         //
+                break;
+            case SDLK_t:
+                is_cpu = true;
+                g_player_speed = 4.0f;
+                break;
+            }
+            //
         default:                                                         //
             break;                                                       //
         }                                                                    //
@@ -248,16 +293,29 @@ void process_input()
                                                                              //
     // ––––––––––––––––––––––––––––––– KEY HOLD –––––––––––––––––––––––––––– //
                                                                              //
-    const Uint8* key_state = SDL_GetKeyboardState(NULL);                     //
-    if (key_state[SDL_SCANCODE_W])                                           //
-    {                                                                        //
-        g_player_movement.y = 1.0f;                                          //
-    }                                                                        //
-    else if (key_state[SDL_SCANCODE_S])                                      //
-    {                                                                        //
-        g_player_movement.y = -1.0f;                                         //
+    const Uint8* key_state = SDL_GetKeyboardState(NULL);
+    if (is_cpu)
+    {
+        if (wall_collision_bool % 2 == 0) {
+            g_player_movement.y = 1.0f;
+        }
+        else {
+            g_player_movement.y = -1.0f;
+        }
     }
-    
+
+    else
+    {
+        if (key_state[SDL_SCANCODE_W])                                           //
+        {                                                                        //
+            g_player_movement.y = 1.0f;                                          //
+        }                                                                        //
+        else if (key_state[SDL_SCANCODE_S])                                      //
+        {                                                                        //
+            g_player_movement.y = -1.0f;                                         //
+        }
+    }
+
     if (key_state[SDL_SCANCODE_UP])                                          //
     {                                                                        //
         other_player_movement.y = 1.0f;                                      //
@@ -266,13 +324,49 @@ void process_input()
     {                                                                        //
         other_player_movement.y = -1.0f;                                     //
     }
-                                                                             //
+
+    // Collision checking should be done here to avoid player input
+    if (check_collision(g_player_position, player_scale, top_wall_position, horizontal_scale) ||
+        check_collision(g_player_position, player_scale, bottom_wall_position, horizontal_scale))
+    {
+        if (is_cpu) {
+            if (check_collision(g_player_position, player_scale, top_wall_position, horizontal_scale)) {
+                wall_collision_bool = 1;
+            }
+            else {
+                wall_collision_bool = 0;
+            }
+
+        }
+        else {
+            g_player_movement = glm::vec3(0.0f);
+            if (check_collision(g_player_position, player_scale, top_wall_position, horizontal_scale)) {
+                g_player_movement.y = -1.0f;
+            }
+            else {
+                g_player_movement.y = 1.0f;
+            }
+
+        }
+    }
+    if (check_collision(other_player_position, player_scale, top_wall_position, horizontal_scale) ||
+        check_collision(other_player_position, player_scale, bottom_wall_position, horizontal_scale))
+    {
+        other_player_movement = glm::vec3(0.0f);
+        if (check_collision(other_player_position, player_scale, top_wall_position, horizontal_scale)) {
+            other_player_movement.y = -1.0f;
+        }
+        else {
+            other_player_movement.y = 1.0f;
+        }
+    }
+
     // This makes sure that the player can't "cheat" their way into moving   //
     // faster                                                                //
     if (glm::length(g_player_movement) > 1.0f)                               //
     {                                                                        //
         g_player_movement = glm::normalize(g_player_movement);               //
-    }                                                                        
+    }
     if (glm::length(other_player_movement) > 1.0f)                           //
     {                                                                        //
         other_player_movement = glm::normalize(other_player_movement);
@@ -280,86 +374,40 @@ void process_input()
     // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 }
 
-// ————————————————————————— NEW STUFF ———————————————————————————— //
-bool check_player_ball_collision(glm::vec3& position_a)  //
-{                                                                   //
-    float x_distance = fabs(position_a.x - ball_position.x) - ((ball_scale.x * collision_factor + player_scale.x * collision_factor) / 2.0f);
-    float y_distance = fabs(position_a.y - ball_position.y) - ((ball_scale.y * collision_factor + player_scale.y * collision_factor) / 2.0f);
-
-    return x_distance < 0.0f && y_distance < 0.0f;
-}                                                                   //
-// ———————————————————————————————————————————————————————————————— //
-
 void update()
 {
     float ticks = (float)SDL_GetTicks() / MILLISECONDS_IN_SECOND; // get the current number of ticks
     float delta_time = ticks - previous_ticks; // the delta time is the difference from the last frame
     previous_ticks = ticks;
 
-    left_wall_matrix = glm::mat4(1.0f);
-    left_wall_matrix = glm::scale(left_wall_matrix, glm::vec3(1.0f, 7.5f, 0.0f));
-    left_wall_matrix = glm::translate(left_wall_matrix, glm::vec3(-5.0f, 0.0f, 0.0f));
-
-    right_wall_matrix = glm::mat4(1.0f);
-    right_wall_matrix = glm::scale(right_wall_matrix, glm::vec3(1.0f, 7.5f, 0.0f));
-    right_wall_matrix = glm::translate(right_wall_matrix, glm::vec3(5.0f, 0.0f, 0.0f));
-
-    top_wall_matrix = glm::mat4(1.0f);
-    top_wall_matrix = glm::scale(top_wall_matrix, glm::vec3(9.5f, 1.0f, 0.0f));
-    top_wall_matrix = glm::translate(top_wall_matrix, glm::vec3(0.0f, 4.0f, 0.0f));
-
-    bottom_wall_matrix = glm::mat4(1.0f);
-    bottom_wall_matrix = glm::scale(bottom_wall_matrix, glm::vec3(9.5f, 1.0f, 0.0f));
-    bottom_wall_matrix = glm::translate(bottom_wall_matrix, glm::vec3(0.0f, -4.0f, 0.0f));
-
-
-    // –––––––––––––––––––––––––––––––– NEW STUFF ––––––––––––––––––––––––– //
     // Add direction * units per second * elapsed time                      //
     g_player_position += g_player_movement * g_player_speed * delta_time;   //
     other_player_position += other_player_movement * other_player_speed * delta_time;
     ball_position += ball_movement * ball_speed * delta_time;
     //
-    
-    
-    // Check player-wall collision
-    //if (check_collision(g_player_position, top_wall_position) || check_collision(other_player_position, top_wall_position) ||
-    //    check_collision(g_player_position, bottom_wall_position) || check_collision(other_player_position, bottom_wall_position)) {
-    //    // DO SOMETHING TO STOP COLLISION
-    //}
-
-    //// Check ball-wall collision
-    //if (check_collision(ball_position, left_wall_position)) {
-    //    // other_player wins
-    //    // display winner message
-    //    // end game
-    //}
-    //if (check_collision(ball_position, right_wall_position)) {
-    //    // g_player wins
-    //    // display winner message
-    //    // end game
-    //}
 
     g_model_matrix = glm::mat4(1.0f);
+    g_model_matrix = glm::translate(g_model_matrix, g_player_position);
     g_model_matrix = glm::scale(g_model_matrix, glm::vec3(0.5f, 2.0f, 0.0f));//
-    g_model_matrix = glm::translate(g_model_matrix, g_player_position);     //
     // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
     other_model_matrix = glm::mat4(1.0f);
-    other_model_matrix = glm::scale(other_model_matrix, glm::vec3(0.5f, 2.0f, 0.0f));//
-    other_model_matrix = glm::translate(other_model_matrix, other_player_position);     //
-    // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+    other_model_matrix = glm::translate(other_model_matrix, other_player_position);
+    other_model_matrix = glm::scale(other_model_matrix, glm::vec3(0.5f, 2.0f, 0.0f));
 
     ball_matrix = glm::mat4(1.0f);
-    ball_matrix = glm::scale(ball_matrix, glm::vec3(0.2f, 0.2f, 0.0f));
     ball_matrix = glm::translate(ball_matrix, ball_position);
+    ball_matrix = glm::scale(ball_matrix, glm::vec3(0.2f, 0.2f, 0.0f));
 
-    // Check ball collision
-    if (check_player_ball_collision(g_player_position) || check_player_ball_collision(other_player_position)) {
-        ball_collision_count += 1;
-        std::cout << std::time(nullptr) << ": Collision.\n";
+    // Check ball-player collision
+    if (check_collision(g_player_position, player_scale, ball_position, ball_scale)) {
+        ball_collision_bool = 1;
+    }
+    else if (check_collision(other_player_position, player_scale, ball_position, ball_scale)) {
+        ball_collision_bool = 2;
     }
 
-    if (ball_collision_count % 2 == 1) {
+    if (ball_collision_bool == 1) {
         ball_movement.x = 1.0f;
         ball_movement.y = 0.5f;
     }
@@ -367,8 +415,13 @@ void update()
         ball_movement.x = -1.0f;
         ball_movement.y = -0.5f;
     }
-    if (glm::length(g_player_movement) > 1.0f) {
-        ball_movement = glm::normalize(ball_movement);
+
+
+    // Check ball-wall collision
+    if (check_collision(ball_position, ball_scale, left_wall_position, vertical_scale) ||
+        check_collision(ball_position, ball_scale, right_wall_position, vertical_scale))
+    {
+        g_game_is_running = false;
     }
 
 }
@@ -405,10 +458,10 @@ void render() {
     draw_object(g_model_matrix, player_texture_id);
     draw_object(other_model_matrix, other_texture_id);
     draw_object(ball_matrix, ball_texture_id);
-    draw_object(left_wall_matrix, ball_texture_id);
-    draw_object(right_wall_matrix, ball_texture_id);
-    draw_object(top_wall_matrix, ball_texture_id);
-    draw_object(bottom_wall_matrix, ball_texture_id);
+    draw_object(left_wall_matrix, wall_texture_id);
+    draw_object(right_wall_matrix, wall_texture_id);
+    draw_object(top_wall_matrix, wall_texture_id);
+    draw_object(bottom_wall_matrix, wall_texture_id);
 
     // We disable two attribute arrays now
     glDisableVertexAttribArray(g_program.get_position_attribute());
