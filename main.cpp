@@ -77,16 +77,6 @@ top_wall_matrix,
 bottom_wall_matrix,
 ball_matrix;
 
-float g_triangle_x = 0.0f;
-float g_triangle_y = 0.0f;
-float g_triangle_rotate = 0.0f;
-
-const float RADIUS = 2.5f;
-const float ROT_SPEED = 0.01f;
-float o_angle = 0.0f;
-float o_x_coords = RADIUS;
-float o_y_coords = 0.0f;
-
 float previous_ticks = 0.0f;
 
 bool is_cpu = false;
@@ -106,9 +96,10 @@ glm::vec3 other_player_movement = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 other_player_orientation = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 other_player_rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
-glm::vec3 player_scale = glm::vec3(0.5f, 2.0f, 0.0f);
+glm::vec3 player_scale = glm::vec3(0.2f, 2.0f, 0.0f);
 glm::vec3 horizontal_scale = glm::vec3(10.0f, 0.1f, 0.0f);
 glm::vec3 vertical_scale = glm::vec3(0.1f, 8.0f, 0.0f);
+glm::vec2 angles = glm::vec2(1.0f, 1.0f);
 
 glm::vec3 top_wall_position = glm::vec3(0.0f, 3.5f, 0.0f);
 glm::vec3 bottom_wall_position = glm::vec3(0.0f, -3.5f, 0.0f);
@@ -120,11 +111,11 @@ glm::vec3 ball_movement = glm::vec3(0.0f, 0.0f, 0.0f);
 
 glm::vec3 ball_orientation = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 ball_rotation = glm::vec3(0.0f, 0.0f, 0.0f);
-glm::vec3 ball_scale = glm::vec3(0.001f, 0.001f, 0.0f);
+glm::vec3 ball_scale = glm::vec3(0.2f, 0.2f, 0.0f);
 
 float g_player_speed = 5.0f;  // move 1 unit per second 
 float other_player_speed = 5.0f;
-float ball_speed = 3.0f;
+float ball_speed = 4.5f;
 
 GLuint player_texture_id;
 GLuint other_texture_id;
@@ -211,12 +202,12 @@ void initialise()
 
     g_model_matrix = glm::mat4(1.0f);
     g_model_matrix = glm::translate(g_model_matrix, g_player_position);
-    g_model_matrix = glm::scale(g_model_matrix, glm::vec3(0.5f, 2.0f, 0.0f));//
+    g_model_matrix = glm::scale(g_model_matrix, player_scale);//
     // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
     other_model_matrix = glm::mat4(1.0f);
     other_model_matrix = glm::translate(other_model_matrix, other_player_position);
-    other_model_matrix = glm::scale(other_model_matrix, glm::vec3(0.5f, 2.0f, 0.0f));
+    other_model_matrix = glm::scale(other_model_matrix, player_scale);
     // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
     ball_matrix = glm::translate(ball_matrix, glm::vec3(0.0f, 0.0f, 0.0f));
@@ -384,46 +375,51 @@ void update()
     g_player_position += g_player_movement * g_player_speed * delta_time;   //
     other_player_position += other_player_movement * other_player_speed * delta_time;
     ball_position += ball_movement * ball_speed * delta_time;
-    //
 
     g_model_matrix = glm::mat4(1.0f);
     g_model_matrix = glm::translate(g_model_matrix, g_player_position);
-    g_model_matrix = glm::scale(g_model_matrix, glm::vec3(0.5f, 2.0f, 0.0f));//
-    // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
+    g_model_matrix = glm::scale(g_model_matrix, player_scale);//
 
     other_model_matrix = glm::mat4(1.0f);
     other_model_matrix = glm::translate(other_model_matrix, other_player_position);
-    other_model_matrix = glm::scale(other_model_matrix, glm::vec3(0.5f, 2.0f, 0.0f));
+    other_model_matrix = glm::scale(other_model_matrix, player_scale);
 
     ball_matrix = glm::mat4(1.0f);
     ball_matrix = glm::translate(ball_matrix, ball_position);
-    ball_matrix = glm::scale(ball_matrix, glm::vec3(0.2f, 0.2f, 0.0f));
+    ball_matrix = glm::scale(ball_matrix, ball_scale);
+    // –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––– //
 
-    // Check ball-player collision
-    if (check_collision(g_player_position, player_scale, ball_position, ball_scale)) {
-        ball_collision_bool = 1;
-    }
-    else if (check_collision(other_player_position, player_scale, ball_position, ball_scale)) {
-        ball_collision_bool = 2;
+    /*
+    left paddle --> x flips,  y stays the same
+    right paddle --> x flips, y stays the same for every hit
+
+    angle.x *= -1
+
+    topwall/bottomwall --> angle.y *= -1
+    */
+
+    // Check ball-object collisions
+    if (check_collision(g_player_position, player_scale, ball_position, ball_scale) ||
+        check_collision(other_player_position, player_scale, ball_position, ball_scale))
+    {
+        angles.x *= -1.0f;
     }
 
-    if (ball_collision_bool == 1) {
-        ball_movement.x = 1.0f;
-        ball_movement.y = 0.5f;
-    }
-    else {
-        ball_movement.x = -1.0f;
-        ball_movement.y = -0.5f;
+    if (check_collision(ball_position, ball_scale, top_wall_position, horizontal_scale) ||
+        check_collision(ball_position, ball_scale, bottom_wall_position, horizontal_scale))
+    {
+        angles.y *= -1.0f;
     }
 
-
-    // Check ball-wall collision
+    // End game condition
     if (check_collision(ball_position, ball_scale, left_wall_position, vertical_scale) ||
         check_collision(ball_position, ball_scale, right_wall_position, vertical_scale))
     {
         g_game_is_running = false;
     }
 
+    ball_movement.x = 0.65f * angles.x;
+    ball_movement.y = 0.55f * angles.y;
 }
 
 void draw_object(glm::mat4& object_model_matrix, GLuint& object_texture_id)
