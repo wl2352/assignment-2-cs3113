@@ -55,7 +55,7 @@ const float MILLISECONDS_IN_SECOND = 1000.0;
 const float DEGREES_PER_SECOND = 90.0f;
 
 const char PLAYER_SPRITE_FILEPATH[] = "assets/aware.jpeg";
-const char KITTY_FILEPATH[] = "assets/blue-metallic.jpg";
+const char KITTY_FILEPATH[] = "assets/angrykitty.jpeg";
 const char WALL_FILEPATH[] = "assets/glossy.jpg";
 const char BALL_FILEPATH[] = "assets/Red_Circle_full.png";
 
@@ -221,8 +221,7 @@ void initialise()
 
     glUseProgram(g_program.get_program_id());
 
-    //glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
-    glClearColor(0.55f, 0.234, 0.443f, 0.0f);
+    glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
 
     player_texture_id = load_texture(PLAYER_SPRITE_FILEPATH);
     other_texture_id = load_texture(KITTY_FILEPATH);
